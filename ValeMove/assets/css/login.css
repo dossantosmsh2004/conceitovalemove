@@ -1,0 +1,84 @@
+
+  #screen-login {
+    min-height: 100vh;
+    min-height: 100dvh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    position: relative;
+    overflow: hidden;
+    background:
+      radial-gradient(ellipse 80% 60% at 20% 25%, rgba(16,168,97,0.14) 0%, transparent 60%),
+      radial-gradient(ellipse 60% 50% at 85% 75%, rgba(253,185,19,0.10) 0%, transparent 60%),
+      linear-gradient(135deg, #05110c 0%, #0e1a14 50%, #05110c 100%);
+  }
+  #screen-login::after {
+    content: ''; position: absolute; inset: 0; pointer-events: none;
+    background-image:
+      linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px);
+    background-size: 40px 40px;
+    mask-image: radial-gradient(circle at center, rgba(0,0,0,.9) 30%, transparent 75%);
+  }
+  .login-card {
+    position: relative; z-index: 1;
+    width: 100%; max-width: 420px;
+    background: rgba(255,255,255,0.04);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 24px;
+    padding: 32px;
+  }
+  .login-input {
+    width: 100%; padding: 11px 14px;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 10px;
+    color: #fff; font-size: 14px;
+    outline: none; transition: border-color .15s, background .15s;
+  }
+  .login-input:focus { border-color: var(--v-green-lt); background: rgba(255,255,255,0.08); }
+  .login-input::placeholder { color: rgba(255,255,255,0.3); }
+  .login-tab {
+    flex: 1; padding: 8px 10px; border: none;
+    background: transparent; color: rgba(255,255,255,0.5);
+    font-size: 12px; font-weight: 500;
+    border-radius: 7px; cursor: pointer;
+    transition: all .15s; letter-spacing: 0.02em;
+  }
+  .login-tab.active { background: var(--v-green); color: #fff; }
+
+  .rfid-zone {
+    border: 2px dashed rgba(255,255,255,0.18);
+    border-radius: 14px;
+    padding: 28px 20px;
+    text-align: center;
+    cursor: pointer;
+    transition: all .2s;
+  }
+  .rfid-zone:hover { border-color: var(--v-green-lt); background: rgba(16,168,97,0.08); }
+  .rfid-zone.reading { border-color: var(--v-green-lt); animation: rfid-pulse 1s ease infinite; }
+  @keyframes rfid-pulse { 0%,100%{opacity:1;} 50%{opacity:0.55;} }
+
+  .demo-btn {
+    display: flex; align-items: center; gap: 10px; width: 100%;
+    padding: 9px 12px; background: transparent;
+    border: 1px solid transparent; border-radius: 8px;
+    color: rgba(255,255,255,0.6); font-size: 12px;
+    cursor: pointer; transition: all .12s;
+    margin-bottom: 4px;
+    text-align: left;
+  }
+  .demo-btn:hover { background: rgba(255,255,255,0.06); border-color: rgba(255,255,255,0.12); color: #fff; }
+
+  .role-pill {
+    padding: 2px 8px; border-radius: 4px;
+    font-size: 9px; font-weight: 700;
+    letter-spacing: 0.08em;
+    font-family: 'JetBrains Mono', monospace;
+    text-transform: uppercase;
+  }
+  .rp-mot    { background: rgba(16,168,97,0.22);  color:#7ee8a7; }
+  .rp-campo  { background: rgba(253,185,19,0.22); color:#fde27a; }
+  .rp-desp   { background: rgba(99,217,238,0.22); color:#9ae4f0; }
