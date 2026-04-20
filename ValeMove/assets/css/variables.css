@@ -1,0 +1,24 @@
+:root {
+    --v-green:    #008f4c;
+    --v-green-dk: #00683a;
+    --v-green-lt: #10a861;
+    --v-yellow:   #fdb913;
+    --v-yellow-dk:#e0a000;
+    --v-ink:      #0e1a14;
+    --v-slate:    #f4f6f5;
+    --v-border:   #dbe1dd;
+  }
+
+  * { -webkit-tap-highlight-color: transparent; }
+  html, body { font-family: 'Inter', system-ui, sans-serif; }
+  body {
+    background: var(--v-slate);
+    color: var(--v-ink);
+    font-size: 14px;
+    line-height: 1.5;
+    overflow-x: hidden;
+    min-height: 100vh;
+    min-height: 100dvh;
+  }
+  .font-mono { font-family: 'JetBrains Mono', ui-monospace, monospace; }
+  .tabular-nums { font-variant-numeric: tabular-nums; }
