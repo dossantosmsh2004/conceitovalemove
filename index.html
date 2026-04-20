@@ -1,0 +1,259 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+<meta name="theme-color" content="#008f4c"/>
+<title>ValeMove · Otimização de Rotas — Porto Ponta da Madeira</title>
+
+<!-- Fonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+
+<!-- Tailwind + Lucide + Leaflet (apenas para ocorrências geolocalizadas) -->
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<link rel="stylesheet" href="assets/css/styles.css"/>
+<script src="assets/js/tailwind-config.js"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+</head>
+<body>
+
+<!-- ============================================================
+     LOGO VALEMOVE — SVG oficial (reutilizável)
+     Para trocar pela imagem fornecida, basta editar o data-uri
+     da classe .vm-logo-img no topo do <style> ou substituir o
+     <svg> abaixo por <img src="logo-valemove.png">
+============================================================ -->
+<template id="tpl-vm-logo">
+  <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" fill="none" aria-label="ValeMove">
+    <!-- V teal -->
+    <path d="M10 14 L50 90 L90 14 L74 14 L50 62 L26 14 Z" fill="#007e7a"/>
+    <!-- Asa amarela (flare no topo direito do V) -->
+    <path d="M58 14 L90 14 C84 32 72 40 58 30 Z" fill="#edb111"/>
+    <!-- Linha de rota (curva em S) -->
+    <path d="M30 22 Q38 38 46 48 Q52 54 54 68" stroke="#1cb8be" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+    <!-- Pontos da rota -->
+    <circle cx="30" cy="22" r="4.5" fill="#1cb8be"/>
+    <circle cx="54" cy="68" r="4.5" fill="#1cb8be"/>
+  </svg>
+</template>
+
+<!-- ======================================================================
+     PLACEHOLDER DE LOGO EM ARQUIVO (opcional)
+     Se preferir usar a imagem PNG em vez do SVG inline:
+     1) Salve o arquivo anexado como "logo-valemove.png" na mesma pasta
+     2) Descomente a linha abaixo e comente os <svg> inline nos pontos de uso
+     <img id="logo-valemove" src="logo-valemove.png" alt="ValeMove" style="display:none;">
+====================================================================== -->
+
+<!-- ============================================================
+     LOGIN
+============================================================ -->
+<div id="screen-login">
+  <div class="login-card">
+    <!-- Logo -->
+    <div class="flex items-center gap-3 mb-7">
+      <div class="vm-logo w-14 h-14">
+        <!-- SVG ValeMove (para trocar pela PNG, veja placeholder no topo do <body>) -->
+        <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" fill="none" aria-label="ValeMove">
+          <path d="M10 14 L50 90 L90 14 L74 14 L50 62 L26 14 Z" fill="#007e7a"/>
+          <path d="M58 14 L90 14 C84 32 72 40 58 30 Z" fill="#edb111"/>
+          <path d="M30 22 Q38 38 46 48 Q52 54 54 68" stroke="#1cb8be" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+          <circle cx="30" cy="22" r="4.5" fill="#1cb8be"/>
+          <circle cx="54" cy="68" r="4.5" fill="#1cb8be"/>
+        </svg>
+      </div>
+      <div>
+        <div class="text-white font-bold text-[22px] tracking-tight leading-none">ValeMove</div>
+        <div class="text-[10px] font-mono text-white/45 uppercase tracking-[0.18em] mt-1">Otimização de Rotas · Vale PMad</div>
+      </div>
+    </div>
+
+    <!-- Alerta login -->
+    <div id="login-alert" class="hidden mb-3 p-3 rounded-lg text-[12px]"></div>
+
+    <!-- Tabs -->
+    <div class="flex gap-1 bg-white/5 rounded-lg p-1 mb-5">
+      <button class="login-tab active" id="tab-senha" onclick="switchLoginTab('senha')">Matrícula</button>
+      <button class="login-tab"        id="tab-rfid"  onclick="switchLoginTab('rfid')">Crachá RFID</button>
+    </div>
+
+    <!-- Método: Matrícula -->
+    <div id="method-senha">
+      <div class="field mb-3">
+        <label class="text-white/50">Matrícula</label>
+        <input class="login-input font-mono" id="inp-matricula" placeholder="V000000" autocomplete="off"/>
+      </div>
+      <div class="field mb-4">
+        <label class="text-white/50">Senha</label>
+        <input class="login-input" id="inp-senha" type="password" placeholder="••••••••" onkeypress="if(event.key==='Enter') auth.loginMatricula()"/>
+      </div>
+      <button class="w-full py-3 rounded-lg bg-vale-green hover:bg-vale-green-dk text-white font-semibold text-sm transition" onclick="auth.loginMatricula()">
+        Entrar no ValeMove
+      </button>
+    </div>
+
+    <!-- Método: RFID -->
+    <div id="method-rfid" class="hidden">
+      <div class="rfid-zone" id="rfid-zone" onclick="auth.simulateRFID()">
+        <div class="text-4xl mb-2">📡</div>
+        <div class="text-white font-semibold text-sm mb-1">Aproxime seu crachá RFID</div>
+        <div class="text-white/40 text-[11px] font-mono">ou clique para simular leitura</div>
+      </div>
+      <div id="rfid-code-section" class="hidden mt-4">
+        <div class="field mb-3">
+          <label class="text-white/50">Código enviado por e-mail</label>
+          <input class="login-input font-mono text-center text-xl tracking-[0.3em]" id="inp-rfid-code" placeholder="000000" maxlength="6" inputmode="numeric"/>
+        </div>
+        <button class="w-full py-3 rounded-lg bg-vale-green hover:bg-vale-green-dk text-white font-semibold text-sm transition" onclick="auth.validateRFIDCode()">
+          Confirmar Acesso
+        </button>
+      </div>
+    </div>
+
+    <!-- Demo rápida -->
+    <div class="mt-6 pt-5 border-t border-white/10">
+      <div class="text-[10px] uppercase tracking-[0.12em] text-white/30 font-semibold mb-2">Acesso rápido — demonstração</div>
+      <div id="demo-list"></div>
+    </div>
+
+    <div class="mt-5 text-center text-[10px] font-mono text-white/25 tracking-wider">
+      VALEMOVE · DESAFIO VALE 2026
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     APP SHELL
+============================================================ -->
+<div id="screen-app">
+  <div class="app-shell">
+
+    <!-- SIDEBAR (desktop) -->
+    <aside class="sidebar">
+      <!-- Header sidebar -->
+      <div class="px-4 pt-5 pb-4 border-b border-white/5 flex items-center gap-2.5">
+        <div class="vm-logo w-10 h-10">
+          <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" fill="none" aria-label="ValeMove">
+            <path d="M10 14 L50 90 L90 14 L74 14 L50 62 L26 14 Z" fill="#007e7a"/>
+            <path d="M58 14 L90 14 C84 32 72 40 58 30 Z" fill="#edb111"/>
+            <path d="M30 22 Q38 38 46 48 Q52 54 54 68" stroke="#1cb8be" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+            <circle cx="30" cy="22" r="4.5" fill="#1cb8be"/>
+            <circle cx="54" cy="68" r="4.5" fill="#1cb8be"/>
+          </svg>
+        </div>
+        <div class="leading-tight">
+          <div class="text-white font-bold text-[15px]">ValeMove</div>
+          <div class="text-[9px] font-mono text-white/35 uppercase tracking-[0.14em]">Otimização de Rotas</div>
+        </div>
+      </div>
+
+      <!-- Usuário -->
+      <div class="px-4 py-3 border-b border-white/5 flex items-center gap-2.5">
+        <div class="w-9 h-9 rounded-full bg-vale-green flex items-center justify-center text-white font-bold text-xs" id="sb-avatar">—</div>
+        <div class="flex-1 min-w-0">
+          <div class="text-[13px] font-medium text-white/90 truncate" id="sb-user-name">—</div>
+          <div class="text-[10px] font-mono text-white/40 uppercase tracking-wider" id="sb-user-role">—</div>
+        </div>
+        <span class="pulse-dot text-vale-green-lt">
+          <span class="relative inline-block w-2 h-2 rounded-full bg-vale-green-lt"></span>
+        </span>
+      </div>
+
+      <!-- Nav -->
+      <nav class="flex-1 px-2 py-3 overflow-y-auto scrollbar-thin" id="sb-nav"></nav>
+
+      <!-- Footer sidebar -->
+      <div class="px-2 py-3 border-t border-white/5">
+        <button class="sb-nav-item text-red-300/70 hover:text-red-200" onclick="auth.logout()">
+          <i data-lucide="log-out" class="w-4 h-4"></i>
+          <span>Sair</span>
+        </button>
+      </div>
+    </aside>
+
+    <!-- TOPBAR -->
+    <header class="topbar">
+      <!-- Logo mini (mobile) -->
+      <div class="lg:hidden vm-logo w-9 h-9">
+        <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" fill="none" aria-label="ValeMove">
+          <path d="M10 14 L50 90 L90 14 L74 14 L50 62 L26 14 Z" fill="#007e7a"/>
+          <path d="M58 14 L90 14 C84 32 72 40 58 30 Z" fill="#edb111"/>
+          <path d="M30 22 Q38 38 46 48 Q52 54 54 68" stroke="#1cb8be" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+          <circle cx="30" cy="22" r="4.5" fill="#1cb8be"/>
+          <circle cx="54" cy="68" r="4.5" fill="#1cb8be"/>
+        </svg>
+      </div>
+
+      <div class="flex-1 min-w-0">
+        <div class="text-[14px] font-semibold leading-none truncate" id="topbar-title">—</div>
+        <div class="text-[11px] text-slate-500 truncate" id="topbar-sub">Porto Ponta da Madeira · São Luís · MA</div>
+      </div>
+
+      <!-- Status + relógio -->
+      <div class="flex items-center gap-3">
+        <div class="hidden sm:flex items-center gap-1.5 text-[11px] text-vale-green font-semibold bg-vale-green-bg px-2.5 py-1 rounded-full">
+          <span class="relative inline-block w-2 h-2 rounded-full bg-vale-green pulse-dot text-vale-green"></span>
+          Online
+        </div>
+        <div class="text-[12px] font-mono text-slate-600 tabular-nums" id="topbar-clock">--:--</div>
+        <button class="lg:hidden w-9 h-9 rounded-lg bg-vale-slate flex items-center justify-center relative" onclick="ui.openAlerts()">
+          <i data-lucide="bell" class="w-4 h-4 text-slate-600"></i>
+          <span class="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-vale-yellow"></span>
+        </button>
+        <div class="mobile-profile lg:hidden">
+          <button
+            type="button"
+            class="w-9 h-9 rounded-full bg-vale-green text-white font-bold text-xs flex items-center justify-center"
+            id="mobile-profile-toggle"
+            onclick="ui.toggleMobileProfileMenu(event)"
+            aria-label="Abrir perfil"
+            aria-expanded="false"
+          >—</button>
+          <div class="mobile-profile-menu hidden" id="mobile-profile-menu">
+            <div class="mobile-profile-head">
+              <div class="mobile-profile-avatar" id="mobile-profile-avatar">—</div>
+              <div class="min-w-0 flex-1">
+                <div class="text-[13px] font-semibold text-slate-800 truncate" id="mobile-profile-name">—</div>
+                <div class="text-[10px] font-mono text-slate-500 uppercase tracking-[0.14em]" id="mobile-profile-role">—</div>
+              </div>
+            </div>
+            <button type="button" class="mobile-profile-btn" onclick="auth.logout()">
+              <i data-lucide="log-out" class="w-4 h-4"></i>
+              <span>Sair</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- CONTENT -->
+    <main class="content bg-vale-slate min-h-0">
+      <div class="content-wrap" id="content">
+        <!-- renderizado via JS -->
+      </div>
+    </main>
+
+    <!-- BOTTOM NAV (mobile) -->
+    <nav class="bottom-nav grid-cols-4" id="bottom-nav"></nav>
+
+  </div>
+</div>
+
+<!-- Toasts -->
+<div id="toasts"></div>
+
+<!-- Modal (proposta / detalhes) -->
+<div id="modal-root" class="fixed inset-0 z-50 hidden modal-bd items-center justify-center p-4" onclick="if(event.target===this) ui.closeModal()">
+  <div class="bg-white rounded-2xl w-full max-w-3xl max-h-[92vh] overflow-hidden flex flex-col shadow-pop" id="modal-box">
+    <div id="modal-content" class="flex-1 overflow-y-auto scrollbar-thin"></div>
+  </div>
+</div>
+
+  <script src="assets/js/app.js"></script>
+</body>
+</html>
